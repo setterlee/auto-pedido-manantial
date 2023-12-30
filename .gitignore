@@ -1,0 +1,28 @@
+# Carpetas
+node_modules/
+dist/
+coverage/
+
+# Archivos de configuración
+.env
+
+# Archivos de registro y depuración
+*.log
+*.log.*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+puppeteer-errors.txt
+
+# Archivos generados por el editor de código
+.vscode/
+.idea/
+
+# Archivos de respaldo
+*~
+*.swp
+
+# Archivos de compilación TypeScript
+*.js
+*.js.map
+
