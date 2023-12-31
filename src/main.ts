@@ -60,10 +60,10 @@ async function selectAddress(page: Page) {
     // Se le hace submit al formulario
     const formulario = await page.$('form#form-address-selection');
 
-    if (!formulario){
+    if (!formulario) {
         throw new Error('No se encontro el formulario para seleccionar la dirección');
     }
-    
+
     // Envía el formulario
     await formulario.evaluate(form => form.submit());
 }
@@ -74,30 +74,39 @@ async function selectProducts(page: Page) {
     // Espera a que el elemento con la clase "full-steps" y su contenido aparezca
     await page.waitForSelector('form#checkout_form_cart.online-order-form-catalog');
 
-    // Se ubica el input para especificar la cantidad del producto
-    const paragrafo = await getElement(page, 'p.small', process.env.PRODUCTO ?? (() => { throw new Error('Producto no definido en las variables de entorno'); })());
-    console.log('Parrafo', paragrafo);
-    const productCard = paragrafo.closest('.product-card');
+    // Espera por lista de productos
+    await page.waitForSelector('div.row.mb-6.variants-client-section.section-botellones.box-show-botellones')
 
-    if (!productCard){
-        throw new Error('No se encontro el producto');
-    }
-    
-    const productFooter = productCard.querySelector('.product-footer');
+    const searchText = process.env.PRODUCTO ?? (() => { throw new Error('Producto no definido en las variables de entorno'); })();
+    const qty = process.env.CANTIDAD ?? (() => { throw new Error('Cantida no definida en las variables de entorno'); })();
+    // Se ejecuta en el contexto de la pagina la asignacion de la cantidad al producto configurado
+    await page.evaluate((searchText: string, qty: string) => {
+        const paragraphs = Array.from(document.querySelectorAll('p.small'));
 
-    if (!productFooter){
-        throw new Error('No se encontro el producto');
-    }
+        const targetParagraph = paragraphs.find(p => p.textContent?.includes(searchText));
+        if (!targetParagraph) throw new Error('No se encontro el parrafo con el id del producto');
 
-    const input = productFooter.querySelector('input[type="number"]');
-    
-    if (!input){
-        throw new Error('No se encontro el elemento de entrada para especificar la cantidad del producto');
-    }
+        const productCard = targetParagraph.closest('.product-card');
+        if (!productCard) throw new Error('No se encontro el producto');
 
-    input.setAttribute('value', '2');
+        const productFooter = productCard.querySelector('.product-footer');
+        if (!productFooter) throw new Error('No se encontro el footer del producto');
+
+        const input = productFooter.querySelector('input[type="number"]');
+        if (!input) throw new Error('No se encontro el input de la cantidad para el producto');
+        
+        input.setAttribute('value', qty);
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+    }, searchText, qty);
+
+    // Se espera a que se actualice la cantidad de producciones seleccionados sea igual a 2
+    await page.waitForFunction(() => {
+        const element = document.querySelector('strong#total-count-products');
+        return element?.textContent === '2';
+    })
+
     await clickButton(page, 'form#checkout_form_cart button.btn.btn-lg.btn-alt.btn-primary.button-submit-catalog.click-loading span');
-    
+
 }
 
 async function selectDeliveryDate(page: Page) {
@@ -134,8 +143,7 @@ async function selectDeliveryDate(page: Page) {
                 throw new Error('Día de entrega no válido');
         }
 
-        // Haz clic en el botón "Ir al siguiente paso"
-        await page.click('span:contains("Ir al siguiente paso")');
+        await clickButton(page, 'form#checkout_form_delivery button.btn.btn-lg.btn-alt.btn-primary.click-loading span');
 
         return diaDeEntrega;
     } catch (error) {
@@ -149,7 +157,7 @@ async function selectPaymentMethod(page: Page) {
 
     try {
         // Espera a que aparezca el botón con el span "Comprar"
-        await page.waitForSelector('button span:contains("Comprar")');
+        await page.waitForSelector('div#payment-form-box');
 
         // Hacer clic en el enlace con data-method-type igual a 'delivery'
         await page.click('a[data-method-type="delivery"]');
@@ -172,29 +180,16 @@ async function buy(page: Page, diaDeEntrega: string) {
     console.log(`Paso 6: Compra realizada con éxito. El pedido será entregado el próximo ${diaDeEntrega}`);
 }
 
-// Funcion para ubicar elementos por su contenido
-async function getElement(page: Page, typeElement: string, content: string) {
-    console.log('Buscando elemento ' + typeElement + ' con el contenido ' + content);
-    const element = await page.$$eval(typeElement, (elements, content) => {
-        return elements
-            .find(element => element.textContent?.includes(content));
-    }, content);
-    console.log(element?.outerHTML)
-    if (!element) {
-        throw new Error('No se encontro el elemento ' + typeElement + ' con el contenido ' + content);
-    }
 
-    return element;
-}
 
 // Funcion para hacer click sobre boton
 async function clickButton(page: Page, reference: string) {
     const boton = await page.$(reference);
 
-        if (!boton) {
+    if (!boton) {
         throw new Error('No se encontro el botón en reference: ' + reference);
     }
-    
+
     // Se espera a que el boton este habilitado
     await page.waitForSelector(reference);
 
