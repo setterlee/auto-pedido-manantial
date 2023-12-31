@@ -8,8 +8,8 @@ async function main() {
 
 async function runPuppeteer() {
     const browser = await puppeteer.launch({
-        headless: false,
-        slowMo: 250
+        headless: process.env.ENV === 'dev' ? false : true,
+        slowMo: process.env.ENV === 'dev' ? 250 : 0
     });
     const page = await browser.newPage();
     await page.goto(process.env.HOST ?? (() => { throw new Error('Host no definido en las variables de entorno'); })());
@@ -41,7 +41,7 @@ async function login(page: Page) {
     await page.type('#rut', process.env.RUT ?? (() => { throw new Error('Usuario no definido en las variables de entorno'); })());
     await page.type('#password', process.env.CONTRASENA ?? (() => { throw new Error('Contrasena no definida en las variables de entorno'); })());
     // Selecciona el botón que tiene la clase y contiene el texto "Iniciar Sesión"
-    const boton = await page.$('button.btn.btn-secondary.btn-lg.click-loading span');
+    const boton = await page.$('form[action="/login"] button.btn.btn-secondary.btn-lg.click-loading span');
 
     // Haz clic en el botón
     if (!boton) {
