@@ -9,7 +9,7 @@ async function main() {
 async function runPuppeteer() {
     const browser = await puppeteer.launch({
         headless: process.env.ENV === 'dev' ? false : true,
-        slowMo: process.env.ENV === 'dev' ? 250 : 0
+        slowMo: process.env.ENV === 'dev' ? 50 : 0
     });
     const page = await browser.newPage();
     await page.goto(process.env.HOST ?? (() => { throw new Error('Host no definido en las variables de entorno'); })());
@@ -37,17 +37,21 @@ async function runPuppeteer() {
 
 async function login(page: Page) {
     console.log('Paso 1: Iniciando sesión');
+
+    await page.waitForSelector('#rut');
+
     // Ingresa el valor de USER y PASSWORD en los campos correspondientes
     await page.type('#rut', process.env.RUT ?? (() => { throw new Error('Usuario no definido en las variables de entorno'); })());
     await page.type('#password', process.env.CONTRASENA ?? (() => { throw new Error('Contrasena no definida en las variables de entorno'); })());
-    // Selecciona el botón que tiene la clase y contiene el texto "Iniciar Sesión"
+    // Selecciona el botón de login"
     const boton = await page.$('form[action="/login"] button.btn.btn-secondary.btn-lg.click-loading span');
 
     // Haz clic en el botón
     if (!boton) {
         throw new Error('No se encontro el botón para iniciar sesión');
     }
-
+    const textoDelElemento = await page.evaluate(element => element.parentElement?.outerHTML, boton);
+    console.log('Texto del elemento:', textoDelElemento);
     await boton.click();
 }
 
@@ -55,18 +59,33 @@ async function selectAddress(page: Page) {
     console.log('Paso 2: Seleccionar dirección');
 
     // Espera a que la página inicie sesión (ajusta el selector y el tiempo según tu sitio web)
-    await page.waitForSelector('#address-session-list', { timeout: 5000 });
+    await page.waitForSelector('#address-session-list');
 
-    // Haz clic en el botón "Continuar"
-    await page.click('span:contains("Continuar")');
+    // Espera a que el primer input de tipo radio esté seleccionado
+    await page.waitForSelector('form#form-address-selection input[type="radio"]:first-child:checked');
+
+    // Se le hace submit al formulario
+    const formulario = await page.$('form#form-address-selection');
+
+    if (!formulario){
+        throw new Error('No se encontro el formulario para seleccionar la dirección');
+    }
+    
+    // Envía el formulario
+    await formulario.evaluate(form => form.submit());
 }
 
 async function selectProducts(page: Page) {
     console.log('Paso 3: Seleccionar productos');
 
     // Espera a que el elemento con la clase "full-steps" y su contenido aparezca
-    await page.waitForSelector('div.full-steps:has(ul > li.current:has(strong:contains("1")):has(span:contains("Pedido")))');
+    await page.waitForSelector('form#checkout_form_cart.online-order-form-catalog');
 
+    const elements = await getElements(page, 'p', 'BOT20')
+
+    elements.forEach(element => console.log(element));
+
+    /*
     let intentos = 0;
     const maxIntentos = 3;
 
@@ -103,7 +122,7 @@ async function selectProducts(page: Page) {
             intentos++;
         }
     }
-
+    */
     throw new Error('No se pudo seleccionar los productos después de 3 intentos.');
 }
 
@@ -177,6 +196,16 @@ async function buy(page: Page, diaDeEntrega: string) {
     // Puedes agregar una espera adicional si es necesario para asegurarte de que la página se actualice correctamente
 
     console.log(`Paso 6: Compra realizada con éxito. El pedido será entregado el próximo ${diaDeEntrega}`);
+}
+
+// Funcion para ubicar elementos por su contenido
+async function getElements(page: Page, typeElement: string, content: string) {
+    return await page.$$eval(typeElement, (elements, content) => {
+        return elements
+            .filter(element => element.textContent?.includes(content))
+            .map(element => element.outerHTML);
+    }, content);
+
 }
 
 main();
