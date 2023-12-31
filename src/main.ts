@@ -44,15 +44,8 @@ async function login(page: Page) {
     await page.type('#rut', process.env.RUT ?? (() => { throw new Error('Usuario no definido en las variables de entorno'); })());
     await page.type('#password', process.env.CONTRASENA ?? (() => { throw new Error('Contrasena no definida en las variables de entorno'); })());
     // Selecciona el botón de login"
-    const boton = await page.$('form[action="/login"] button.btn.btn-secondary.btn-lg.click-loading span');
+    await clickButton(page, 'form[action="/login"] button.btn.btn-secondary.btn-lg.click-loading span');
 
-    // Haz clic en el botón
-    if (!boton) {
-        throw new Error('No se encontro el botón para iniciar sesión');
-    }
-    const textoDelElemento = await page.evaluate(element => element.parentElement?.outerHTML, boton);
-    console.log('Texto del elemento:', textoDelElemento);
-    await boton.click();
 }
 
 async function selectAddress(page: Page) {
@@ -81,49 +74,30 @@ async function selectProducts(page: Page) {
     // Espera a que el elemento con la clase "full-steps" y su contenido aparezca
     await page.waitForSelector('form#checkout_form_cart.online-order-form-catalog');
 
-    const elements = await getElements(page, 'p', 'BOT20')
+    // Se ubica el input para especificar la cantidad del producto
+    const paragrafo = await getElement(page, 'p.small', process.env.PRODUCTO ?? (() => { throw new Error('Producto no definido en las variables de entorno'); })());
+    console.log('Parrafo', paragrafo);
+    const productCard = paragrafo.closest('.product-card');
 
-    elements.forEach(element => console.log(element));
-
-    /*
-    let intentos = 0;
-    const maxIntentos = 3;
-
-    while (intentos < maxIntentos) {
-        try {
-            // Encuentra el elemento div con la clase "product-body" que contiene el producto "BOT20"
-            const productoDiv = await page.$('div.product-body:has(a span:contains("BOT20"))');
-
-            if (productoDiv) {
-                // Encuentra el input asociado al producto dentro del div "product-footer" precedido por "product-body"
-                const input = await productoDiv.$('div.product-footer + div.product-footer input[type="number"]');
-
-                if (input) {
-                    // Ingresa el valor "2" en el input
-                    await input.type('2');
-                } else {
-                    console.error('No se encontró el input asociado al producto "BOT20".');
-                }
-            } else {
-                console.error('No se encontró el producto "BOT20" en la página.');
-            }
-
-            // Verificar que la etiqueta strong con id 'total-count-products' tenga contenido '2'
-            await page.waitForSelector('strong#total-count-products:contains("2")');
-
-            // Si llegamos aquí, el proceso fue exitoso
-            console.log('Productos seleccionados con éxito');
-
-            // Haz clic en el botón "Seleccionar fecha"
-            await page.click('span:contains("Seleccionar fecha")');
-            return;
-        } catch (error) {
-            console.error(`Error en el intento ${intentos + 1}: ${error}`);
-            intentos++;
-        }
+    if (!productCard){
+        throw new Error('No se encontro el producto');
     }
-    */
-    throw new Error('No se pudo seleccionar los productos después de 3 intentos.');
+    
+    const productFooter = productCard.querySelector('.product-footer');
+
+    if (!productFooter){
+        throw new Error('No se encontro el producto');
+    }
+
+    const input = productFooter.querySelector('input[type="number"]');
+    
+    if (!input){
+        throw new Error('No se encontro el elemento de entrada para especificar la cantidad del producto');
+    }
+
+    input.setAttribute('value', '2');
+    await clickButton(page, 'form#checkout_form_cart button.btn.btn-lg.btn-alt.btn-primary.button-submit-catalog.click-loading span');
+    
 }
 
 async function selectDeliveryDate(page: Page) {
@@ -199,13 +173,33 @@ async function buy(page: Page, diaDeEntrega: string) {
 }
 
 // Funcion para ubicar elementos por su contenido
-async function getElements(page: Page, typeElement: string, content: string) {
-    return await page.$$eval(typeElement, (elements, content) => {
+async function getElement(page: Page, typeElement: string, content: string) {
+    console.log('Buscando elemento ' + typeElement + ' con el contenido ' + content);
+    const element = await page.$$eval(typeElement, (elements, content) => {
         return elements
-            .filter(element => element.textContent?.includes(content))
-            .map(element => element.outerHTML);
+            .find(element => element.textContent?.includes(content));
     }, content);
+    console.log(element?.outerHTML)
+    if (!element) {
+        throw new Error('No se encontro el elemento ' + typeElement + ' con el contenido ' + content);
+    }
 
+    return element;
 }
+
+// Funcion para hacer click sobre boton
+async function clickButton(page: Page, reference: string) {
+    const boton = await page.$(reference);
+
+        if (!boton) {
+        throw new Error('No se encontro el botón en reference: ' + reference);
+    }
+    
+    // Se espera a que el boton este habilitado
+    await page.waitForSelector(reference);
+
+    await boton.click();
+}
+
 
 main();
