@@ -8,10 +8,10 @@ Esta aplicacion aun se encuentra en fase de desarrollo por lo que su uso aun no 
 
 ## Cosas por hacer
 
-- [ ] Remapear los selectores ya que span:contain no es un selector valido
+- [X] Remapear los selectores ya que span:contain no es un selector valido
 - [ ] Agregar capa REST para que el proceso sea capaz de ser ejecutado desde cualquier proceso automatico 
-- [ ] Publicar primera version estable y funcional
-- [ ] Modificar paso de seleccion de productos para tomar los productos a seleccionar de un parametro de configuracion. Actualmente solo selecciona 2 botellones de 20 litros
+- [X] Publicar primera version estable y funcional
+- [X] Modificar paso de seleccion de productos para tomar los productos a seleccionar de un parametro de configuracion. Actualmente solo selecciona 2 botellones de 20 litros
 - [ ] Modificar el paso de seleccion de direccion de entrega para poder especificar la direccion a seleccionar. Actualmente selecciona la primera que sale
 
 ## Requisitos previos

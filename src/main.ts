@@ -27,7 +27,7 @@ async function runPuppeteer() {
     console.log(`Paso 4: Selección de fecha de entrega completada. Día de entrega: ${diaDeEntrega}`);
     await selectPaymentMethod(page);
     console.log('Paso 5: Selección de método de pago completada');
-    // await buy(page);
+    await buy(page);
 
     // Cierra el navegador
     await browser.close();
@@ -171,13 +171,17 @@ async function selectPaymentMethod(page: Page) {
     }
 }
 
-async function buy(page: Page, diaDeEntrega: string) {
+async function buy(page: Page) {
     // Hacer clic en el botón con etiqueta que termina en 'Comprar'
-    await page.click('button span:contains("Comprar")');
+    await clickButton(page, 'div.checkout-submit-area button.btn.btn-lg.btn-alt.btn-primary.click-loading span');
 
-    // Puedes agregar una espera adicional si es necesario para asegurarte de que la página se actualice correctamente
-
-    console.log(`Paso 6: Compra realizada con éxito. El pedido será entregado el próximo ${diaDeEntrega}`);
+    await page.waitForFunction(() => {
+        // Se busca el elemento h1 entre todos los elementos h1 que contenga la frase '¡Compra exitosa!'
+        const h1Elements = Array.from(document.querySelectorAll('h1')); // Get all h1 elements on the page.
+        return h1Elements.some((element) => element.textContent?.includes('Compra exitosa'));
+    
+    })
+   
 }
 
 
