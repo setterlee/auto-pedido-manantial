@@ -36,9 +36,12 @@ Esta aplicacion aun se encuentra en fase de desarrollo por lo que su uso aun no 
 2. Crea un archivo .env en la raíz del proyecto para almacenar tus variables de entorno. Debes definir las siguientes variables:
 
     ```bash
-    HOST="https://manantial.com/login?back_to=orders"
-    RUT="tu rut asociado a tu cuenta manantial"
-    CONTRASENA="la contrasena de la cuenta"
+    ENV="ambiente de desarrollo (dev) o producción (production)"
+    MANANTIAL_HOST="https://manantial.com/login?back_to=orders"
+    MANANTIAL_RUT="tu rut asociado a tu cuenta manantial"
+    MANANTIAL_CONTRASENA="la contrasena de la cuenta"
+    MANANTIAL_PRODUCTO="el codigo del producto que se desea seleccionar"
+    MANANTIAL_CANTIDAD="la cantidad de botellones que se desea seleccionar"
     ``` 
     
 
@@ -61,16 +64,14 @@ Esta aplicacion aun se encuentra en fase de desarrollo por lo que su uso aun no 
 
 ## Personalización
 
-
 Puedes personalizar el código para adaptarlo a tu sitio web y tus necesidades específicas. Consulta el código fuente en main.ts y los diferentes métodos para entender cómo funcionan las acciones automatizadas.
 
 ## Problemas conocidos
-- Si encuentras problemas al ejecutar la aplicación, asegúrate de que Puppeteer esté configurado correctamente y que las dependencias compartidas estén instaladas en tu sistema.
 
-- Si la aplicación no funciona correctamente en tu sitio web, es posible que debas ajustar los selectores y pasos en el código para que se adapten a la estructura de tu sitio web.
+- Si el sitio web de manantial se encuentra lento o bien el internet de la maquina donde se ejecuta este programa presenta lentitud, se puede generar caidas del proceso por agotamiento del tiempo de espera.
 
-- Asegúrate de cumplir con los términos de uso y políticas del sitio web al automatizar acciones en él.
+- Si el sitio web de manantial no responde, el programa se detiene.
 
 ## Licencia
 
-Este proyecto está bajo la licencia MIT. Consulta el archivo LICENSE para obtener más detalles.
+Este proyecto está bajo la licencia MIT. Consulta el archivo LICENSE.md para obtener más detalles.
