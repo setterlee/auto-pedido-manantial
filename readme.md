@@ -12,7 +12,7 @@ Esta aplicacion aun se encuentra en fase de desarrollo por lo que su uso aun no 
 - [X] Agregar capa REST para que el proceso sea capaz de ser ejecutado desde cualquier proceso automatico 
 - [X] Publicar primera version estable y funcional
 - [X] Modificar paso de seleccion de productos para tomar los productos a seleccionar de un parametro de configuracion. Actualmente solo selecciona 2 botellones de 20 litros
-- [ ] Modificar el paso de seleccion de direccion de entrega para poder especificar la direccion a seleccionar. Actualmente selecciona la primera que sale
+- [X] Agregar validacion de pedido en curso o muy reciente
 
 ## Requisitos previos
 
@@ -37,7 +37,9 @@ Esta aplicacion aun se encuentra en fase de desarrollo por lo que su uso aun no 
 
     ```bash
     ENV="ambiente de desarrollo (dev) o producción (production)"
-    MANANTIAL_HOST="https://manantial.com/login?back_to=orders"
+    MANANTIAL_HOST="https://manantial.com"
+    MANANTIAL_PAGE_LOGIN="/login"
+    MANANTIAL_PAGE_ACCOUNT="/account"
     MANANTIAL_RUT="tu rut asociado a tu cuenta manantial"
     MANANTIAL_CONTRASENA="la contrasena de la cuenta"
     MANANTIAL_PRODUCTO="el codigo del producto que se desea seleccionar"

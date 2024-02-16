@@ -19,11 +19,6 @@ app.post('/realizar-pedido-manantial', async (req: Request, res: Response) => {
 
 });
 
-// Ruta POST para iniciar el proceso de compra
-app.post('/test', async (req: Request, res: Response) => {
-
-    res.json({ mensaje: 'test' });
-});
 
 app.listen(port, () => {
     console.log(`Servidor escuchando en el puerto ${port}`);

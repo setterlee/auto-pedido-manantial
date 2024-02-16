@@ -1,39 +1,53 @@
 import puppeteer from 'puppeteer';
 import 'dotenv/config';
-import { Page } from 'puppeteer';
+import { Page, Browser } from 'puppeteer';
 import { clickButton } from './manantial.utils';
 
 export async function requestProducts() {
+    
+    
+    console.log('Iniciando proceso...');
+
     const browser = await puppeteer.launch({
         headless: process.env.ENV === 'dev' ? false : true,
         slowMo: process.env.ENV === 'dev' ? 50 : 0
     });
-    const page = await browser.newPage();
-    await page.goto(process.env.MANANTIAL_HOST ?? (() => { throw new Error('Host no definido en las variables de entorno'); })());
 
-    console.log('Iniciando proceso...');
+    try{
 
-    //Se realizan los pasos:
-    await login(page);
-    console.log('Paso 1: Iniciando sesión completado');
-    await selectAddress(page);
-    console.log('Paso 2: Selección de dirección completada');
-    await selectProducts(page);
-    console.log('Paso 3: Selección de productos completada');
-    const diaDeEntrega = await selectDeliveryDate(page);
-    console.log(`Paso 4: Selección de fecha de entrega completada. Día de entrega: ${diaDeEntrega}`);
-    await selectPaymentMethod(page);
-    console.log('Paso 5: Selección de método de pago completada');
-    await buy(page);
+        //Se realizan los pasos:
+        const page = await login(browser);
+        console.log('Paso 1: Iniciando sesión completado');
+        const pedidoEnCurso = await checkIfIsOrderInProcess(page);
+        console.log('Paso 2: Chequeo de pedido en proceso completado');
+        if (pedidoEnCurso) {
+            return pedidoEnCurso;
+        }
+        await selectProducts(page);
+        console.log('Paso 3: Selección de productos completada');
+        const diaDeEntrega = await selectDeliveryDate(page);
+        console.log(`Paso 4: Selección de fecha de entrega completada. Día de entrega: ${diaDeEntrega}`);
+        await selectPaymentMethod(page);
+        console.log('Paso 5: Selección de método de pago completada');
+        await buy(page);
+    
+        return `El pedido será entregado el próximo ${diaDeEntrega}`;
 
-    // Cierra el navegador
-    await browser.close();
+    }finally{
+        await browser.close();
+    }
+    
 
-    return `El pedido será entregado el próximo ${diaDeEntrega}`;
 }
 
-async function login(page: Page) {
+async function login(browser: Browser): Promise<Page> {
     console.log('Paso 1: Iniciando sesión');
+
+    
+
+    const page = await browser.newPage();
+    await page.goto(`${process.env.MANANTIAL_HOST}${process.env.MANANTIAL_PAGE_LOGIN}` ?? (() => { throw new Error('Host no definido en las variables de entorno'); })());
+
 
     await page.waitForSelector('#rut');
 
@@ -43,30 +57,56 @@ async function login(page: Page) {
     // Selecciona el botón de login"
     await clickButton(page, 'form[action="/login"] button.btn.btn-secondary.btn-lg.click-loading span');
 
-}
-
-async function selectAddress(page: Page) {
-    console.log('Paso 2: Seleccionar dirección');
-
     // Espera a que la página inicie sesión (ajusta el selector y el tiempo según tu sitio web)
     await page.waitForSelector('#address-session-list');
 
-    // Espera a que el primer input de tipo radio esté seleccionado
-    await page.waitForSelector('form#form-address-selection input[type="radio"]:first-child:checked');
+    return page
+}
 
-    // Se le hace submit al formulario
-    const formulario = await page.$('form#form-address-selection');
+async function checkIfIsOrderInProcess(page: Page): Promise<string | undefined> {
+    console.log('Paso 2: Chequeo de pedido en proceso');
 
-    if (!formulario) {
-        throw new Error('No se encontro el formulario para seleccionar la dirección');
+    console.log(`Abriendo pagina ${process.env.MANANTIAL_HOST}${process.env.MANANTIAL_PAGE_ACCOUNT}`)
+    await page.goto(`${process.env.MANANTIAL_HOST}${process.env.MANANTIAL_PAGE_ACCOUNT}` ?? (() => { throw new Error('Host no definido en las variables de entorno'); })());
+
+
+    await page.waitForSelector('h6.text-primary.d-block.p-t-16');
+
+    // Primero se consulta la fecha del despacho del ultimo pedido
+    
+    const fechaDeDespachoUltimoPedido = await page.evaluate(() => {
+        const h6 = Array.from(document.querySelectorAll('h6')).find(h => h.textContent?.includes('Fecha de despacho:'));
+        return h6 ? h6.textContent?.split(':')[1].trim() : null;
+    });
+    
+    if (!fechaDeDespachoUltimoPedido) {
+        throw new Error("No se consiguio fecha de despacho de ultimo pedido");
+        
     }
 
-    // Envía el formulario
-    await formulario.evaluate(form => form.submit());
+    console.log('Fecha de despacho del pedido:', fechaDeDespachoUltimoPedido);
+    
+    //Se transforma la fecha de despacho en un objeto Date tomando en cuenta que viene en formato DD/MM/YYYY
+    const fechaDespachoParts = fechaDeDespachoUltimoPedido.split('/');
+    const fechaDespacho = new Date(Number(fechaDespachoParts[2]), Number(fechaDespachoParts[1]) - 1, Number(fechaDespachoParts[0]));
+    
+    const dias: number = diferenciaEnDias(new Date(), fechaDespacho);
+
+    if (dias === 0) {
+        return `Ya hay un pedido en curso para hoy`;
+    } else if (dias > 0 && dias < 15) {
+        return `Se recibio un pedido hace ${dias} dia${dias > 1 ? 's' : ''}`;
+    } else if (dias < 0){
+        return `Ya hay un pedido en curso para dentro de ${dias * -1} dia${dias < -1 ? 's' : ''}`;
+    }
+    
+    return undefined
 }
 
 async function selectProducts(page: Page) {
     console.log('Paso 3: Seleccionar productos');
+
+    await clickButton(page, 'a.btn.btn-primary.click-loading span');
 
     // Espera a que el elemento con la clase "full-steps" y su contenido aparezca
     await page.waitForSelector('form#checkout_form_cart.online-order-form-catalog');
@@ -179,4 +219,19 @@ async function buy(page: Page) {
     
     })
    
+}
+
+
+function diferenciaEnDias(fechaDesde: Date, fechaHasta: Date): number {
+    // Convertir ambas fechas a objetos Date sin la hora
+    fechaDesde.setHours(0, 0, 0, 0);
+    fechaHasta.setHours(0, 0, 0, 0);
+
+    // Calcular la diferencia en milisegundos entre las dos fechas
+    const diferenciaMs = fechaDesde.getTime() - fechaHasta.getTime();
+
+    // Convertir la diferencia de milisegundos a días
+    const diferenciaDias = Math.floor(diferenciaMs / (1000 * 60 * 60 * 24));
+
+    return diferenciaDias;
 }
