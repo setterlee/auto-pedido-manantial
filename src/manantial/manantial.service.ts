@@ -10,7 +10,8 @@ export async function requestProducts() {
 
     const browser = await puppeteer.launch({
         headless: process.env.ENV === 'dev' ? false : true,
-        slowMo: process.env.ENV === 'dev' ? 50 : 0
+        slowMo: process.env.ENV === 'dev' ? 50 : 0,
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
 
     try{
