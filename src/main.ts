@@ -21,5 +21,8 @@ app.post('/realizar-pedido-manantial', async (req: Request, res: Response) => {
 
 
 app.listen(port, () => {
+    // Se imprimen en consola las variables de entorno definidas en el archivo .env
+    console.log('usando las siguientes ENV:');
+    console.log(process.env);
     console.log(`Servidor escuchando en el puerto ${port}`);
 });

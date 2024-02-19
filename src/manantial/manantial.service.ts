@@ -8,10 +8,6 @@ export async function requestProducts() {
     
     console.log('Iniciando proceso...');
 
-    // Se imprimen en consola las variables de entorno definidas en el archivo .env
-    console.log('usando las siguientes ENV:');
-    console.log(process.env);
-
     const browser = await puppeteer.launch({
         headless: process.env.ENV === 'dev' ? false : true,
         slowMo: 50,
