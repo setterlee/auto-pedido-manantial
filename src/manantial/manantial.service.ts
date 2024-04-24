@@ -95,7 +95,7 @@ async function checkIfIsOrderInProcess(page: Page): Promise<string | undefined> 
 
     if (dias === 0) {
         return `Ya hay un pedido en curso para hoy`;
-    } else if (dias > 0 && dias < 15) {
+    } else if (dias > 0 && dias < 5) {
         return `Se recibio un pedido hace ${dias} dia${dias > 1 ? 's' : ''}`;
     } else if (dias < 0){
         return `Ya hay un pedido en curso para dentro de ${dias * -1} dia${dias < -1 ? 's' : ''}`;
